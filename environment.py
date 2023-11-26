@@ -6,12 +6,16 @@ import pandas as pd
 
 STICK = 0
 HIT = 1
+ACTION_SPACE = [
+    STICK,
+    HIT,
+]
 DEALER_HIT_MAX = 17
 
 # min in inclusive, max is exclusive!
 Range = namedtuple('Range', ['min', 'max'])
 PLAYER_RANGE_FOR_ACTION = Range(1, 22)
-DEALER_RANGE_FOR_ACTION = Range(1, 10)
+DEALER_RANGE_FOR_ACTION = Range(1, 11)
 
 class Easy21:
     def __init__(self):
