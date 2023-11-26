@@ -22,7 +22,7 @@ def _init_tables(env):
     return N, Q
 
 
-def epsilon_greedy_policy(state, N, Q,  N_0=100):
+def epsilon_greedy_policy(state, N, Q, N_0=100):
     """
     Policy which allows for exploration and exploitation.
     Flip a coin with epsilon probability to choose to explore, or take the greedy choice
@@ -35,16 +35,15 @@ def epsilon_greedy_policy(state, N, Q,  N_0=100):
     :param N_0: Constant for epsilon decay
     :return: Action to perform
     """
-    dealer, player = state
 
-    # Exploration with probability 1 - epsilon
-    epsilon = N_0 / (N_0 + N[dealer, player].sum())
-    if rng.choice([True, False], p=[1.0 - epsilon, epsilon]) is True:
-        return np.random.choice(ACTION_SPACE)
+    # Exploration with probability epsilon
+    epsilon = N_0 / (N_0 + N[state].sum())
+    if rng.choice([True, False], p=[epsilon, 1.0 - epsilon]):
+        return rng.choice(ACTION_SPACE)
 
     # If not exploring, use greedy(Q)
     # Special case if both actions have same value, argmax takes first, we want random
-    arr = Q[dealer, player]
+    arr = Q[state]
     if np.all(arr == arr.max()):
         return rng.choice(ACTION_SPACE)
 
@@ -59,27 +58,26 @@ def monte_carlo_control(env, policy, n_episodes):
     :param env: Environment to run in, should have step and reset methods
     :param policy: Policy function, which given a state returns the action to perform
     :param n_episodes: Number of episodes to run
-    :return: Numpy array representing the optimal value function
+    :return: Numpy array representing the optimal state-action value function Q*
     """
     N, Q = _init_tables(env)
 
     policy = partial(policy, N=N, Q=Q)
 
-    for j in range(n_episodes):
+    for _ in range(n_episodes):
 
         # Run episode
         states, rewards, actions = episode(env=env, policy=policy)
         G = 0
 
-        # Update value function for each state visited in this episode
-        for i in range(len(states)-1, -1, -1):
-            dealer, player = states[i]
-            G += rewards[i]
-            idx = dealer, player, actions[i]
+        # Update state-action value function for each state-value pair visited in this episode
+        for idx in range(len(states)-1, -1, -1):
+            G += rewards[idx]
+            s_a = (*states[idx], actions[idx])
 
-            N[idx] += 1
-            alpha = 1.0 / N[idx]
-            Q[idx] = Q[idx] + alpha * (G - Q[idx])
+            N[s_a] += 1
+            alpha = 1.0 / N[s_a]
+            Q[s_a] = Q[s_a] + alpha * (G - Q[s_a])
 
     return Q
 

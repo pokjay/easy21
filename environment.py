@@ -32,7 +32,7 @@ class Easy21:
 
         :return: Observation consisting of (dealer card, player card)
         """
-        return np.random.randint(low=1, high=11, size=(2,))
+        return tuple(np.random.randint(low=1, high=11, size=(2,)))
 
     def _draw(self) -> Tuple[int, str]:
         """
@@ -56,7 +56,8 @@ class Easy21:
         :return: New sum of cards after drawing a card from the deck
         """
         value, color = self._draw()
-        return prev_sum + value if color == 'b' else prev_sum - value
+        value = -1*value if color == 'r' else value
+        return prev_sum + value
 
     def step(self, s: Tuple[int, int], a: int) -> Tuple[Tuple[int, int], int, bool]:
         """
@@ -96,7 +97,7 @@ class Easy21:
 
         # Dealer hits until reaching sum of 17 or greater
         dealer_sum = self._draw_and_update(dealer_card)
-        while dealer_sum < DEALER_HIT_MAX:
+        while 0 < dealer_sum < DEALER_HIT_MAX:
             dealer_sum = self._draw_and_update(dealer_sum)
 
         # Player wins - dealer goes bust or player has higher sum
