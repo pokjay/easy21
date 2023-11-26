@@ -14,19 +14,18 @@ def episode(env, policy: Callable):
     is_terminal = False
     reward = 0
 
-    episode_states = [s0]
-    rewards = [reward]
+    episode_states, rewards, actions = [], [], []
 
     while is_terminal is False:
         s1, reward, is_terminal = env.step(s0, a)
 
-        episode_states.append(s1)
+        episode_states.append(s0)
         rewards.append(reward)
-        # print(s1, is_terminal, reward)
+        actions.append(a)
 
         s0, a = s1, policy(s1)
 
-    return episode_states, rewards
+    return episode_states, rewards, actions
 
 
 def plot_value_function(V: np.ndarray) -> None:
