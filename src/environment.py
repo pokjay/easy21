@@ -2,7 +2,6 @@ from collections import namedtuple
 from typing import Callable, Tuple
 
 import numpy as np
-import pandas as pd
 
 STICK = 0
 HIT = 1
@@ -17,12 +16,22 @@ Range = namedtuple('Range', ['min', 'max'])
 PLAYER_RANGE_FOR_ACTION = Range(1, 22)
 DEALER_RANGE_FOR_ACTION = Range(1, 11)
 
+
 class Easy21:
     def __init__(self):
         self.action_space = [
             STICK,
             HIT,
         ]
+        self.state_max_bound = (
+            DEALER_RANGE_FOR_ACTION.max,
+            PLAYER_RANGE_FOR_ACTION.max,
+        )
+
+        self.state_min_bound = (
+            DEALER_RANGE_FOR_ACTION.min,
+            PLAYER_RANGE_FOR_ACTION.min,
+        )
 
     def reset(self):
         """
@@ -81,6 +90,9 @@ class Easy21:
         else:
             raise ValueError('Unknown action value:', a)
 
+        # Clip state to boundaries
+        s1 = tuple(np.clip(s1, a_min=self.state_min_bound, a_max=self.state_max_bound))
+
         return s1, reward, is_terminal
 
     def _stick(self, dealer_card: int, player_sum: int) -> Tuple[Tuple[int, int], int, bool]:
@@ -97,18 +109,19 @@ class Easy21:
 
         # Dealer hits until reaching sum of 17 or greater
         dealer_sum = self._draw_and_update(dealer_card)
-        while 0 < dealer_sum < DEALER_HIT_MAX:
+        while dealer_sum < DEALER_HIT_MAX:
             dealer_sum = self._draw_and_update(dealer_sum)
 
-        # Player wins - dealer goes bust or player has higher sum
-        if dealer_sum < 1 or dealer_sum > 21 or player_sum > dealer_sum:
+        # Dealer didn't go bust, winner has higher sum
+        if 1 <= dealer_sum <= 21:
+            if player_sum > dealer_sum:  # Player wins
+                return (dealer_sum, player_sum), 1, True
+            elif player_sum == dealer_sum:  # Tie
+                return (dealer_sum, player_sum), 0, True
+            else:  # Dealer wins!
+                return (dealer_sum, player_sum), -1, True
+        else:  # Dealer goes bust
             return (dealer_sum, player_sum), 1, True
-        # Draw
-        elif player_sum == dealer_sum:
-            return (dealer_sum, player_sum), 0, True
-        # Dealer wins - dealer has higher sum
-        else:
-            return (dealer_sum, player_sum), -1, True
 
     def _hit(self, dealer_card: int, player_sum: int) -> Tuple[Tuple[int, int], int, bool]:
         """
@@ -120,10 +133,11 @@ class Easy21:
         """
         new_player_sum = self._draw_and_update(player_sum)
 
-        if new_player_sum < 1 or new_player_sum > 21:
-            return (dealer_card, new_player_sum), -1, True
-        else:
+        # Player still not bust yet
+        if 1 <= new_player_sum <= 21:
             return (dealer_card, new_player_sum), 0, False
+        else:
+            return (dealer_card, new_player_sum), -1, True
 
 
 if __name__ == "__main__":

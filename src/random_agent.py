@@ -1,7 +1,7 @@
 import numpy as np
 
-from environment import Easy21
-from helpers import episode
+from src.environment import Easy21
+from src.helpers import episode
 
 
 if __name__ == "__main__":
